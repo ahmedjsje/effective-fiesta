@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>مشاركة الموقع</title>
+<style>
+  body{margin:0;padding:0;font-family:Arial,sans-serif;background:#111;color:#fff;display:flex;justify-content:center;align-items:center;height:100vh}
+  .box{background:#1e1e1e;padding:20px;border-radius:8px;width:320px;text-align:center}
+  button{width:100%;padding:10px;margin-top:10px;background:#2ecc71;border:none;color:#fff;cursor:pointer;border-radius:5px;font-size:16px}
+  #status{margin-top:10px;font-size:14px;color:#fff}
+</style>
+</head>
+<body>
+<div class="box">
+  <h3>مشاركة موقعك</h3>
+  <p>بالضغط على الزر، أنت توافق على إرسال موقعك الحالي إلى البوت.</p>
+  <input id="chatid" type="hidden">
+  <button onclick="sendLocation()">أوافق وأرسل الموقع</button>
+  <p id="status"></p>
+</div>
+
+<script>
+  // رابط سيرفر Flask (غيره فقط إلى الرابط الفعلي بعد رفع السيرفر)
+  const API_URL = "https://YOUR_FLASK_SERVER_URL/send_location";
+
+  // قراءة chat_id من الرابط
+  const params = new URLSearchParams(window.location.search);
+  const chatIdFromUrl = params.get("chat_id");
+  if(chatIdFromUrl){
+    document.getElementById("chatid").value = chatIdFromUrl;
+  }
+
+  function sendLocation(){
+    const chatId = document.getElementById("chatid").value;
+    if(!chatId){alert("الرابط غير صالح."); return;}
+    if(!navigator.geolocation){alert("المتصفح لا يدعم تحديد الموقع."); return;}
+
+    document.getElementById("status").innerText = "جاري طلب الموقع...";
+
+    navigator.geolocation.getCurrentPosition(
+      pos=>{
+        fetch(API_URL,{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({chat_id:chatId, lat:pos.coords.latitude, lon:pos.coords.longitude})
+        })
+        .then(res=>res.json())
+        .then(data=>{
+          document.getElementById("status").innerText = data.ok ? "تم إرسال الموقع بنجاح ✅" : "حدث خطأ أثناء الإرسال ❌";
+        })
+        .catch(err=>{
+          document.getElementById("status").innerText = "حدث خطأ أثناء الإرسال ❌";
+          console.error(err);
+        });
+      },
+      ()=>alert("لم يتم السماح بالموقع.")
+    );
+  }
+</script>
+</body>
+</html>
